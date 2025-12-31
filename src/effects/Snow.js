@@ -5,9 +5,14 @@ export class Snow {
     this.scene = scene;
     this.stormActive = false;
     this.stormParticles = null;
+    this.soundManager = null;
 
     this.particles = this.createSnowParticles(3000);
     scene.add(this.particles);
+  }
+
+  setSoundManager(soundManager) {
+    this.soundManager = soundManager;
   }
 
   createSnowParticles(count) {
@@ -27,7 +32,7 @@ export class Snow {
 
     const material = new THREE.PointsMaterial({
       color: 0xffffff,
-      size: 0.3,
+      size: 0.15,
       transparent: true,
       opacity: 0.8
     });
@@ -41,6 +46,10 @@ export class Snow {
     this.stormActive = true;
     this.stormParticles = this.createSnowParticles(1500);
     this.scene.add(this.stormParticles);
+
+    if (this.soundManager) {
+      this.soundManager.playLoop('wind');
+    }
   }
 
   stopStorm() {
@@ -52,6 +61,10 @@ export class Snow {
       this.stormParticles.geometry.dispose();
       this.stormParticles.material.dispose();
       this.stormParticles = null;
+    }
+
+    if (this.soundManager) {
+      this.soundManager.stop('wind');
     }
   }
 

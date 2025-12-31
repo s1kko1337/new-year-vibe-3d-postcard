@@ -17,15 +17,21 @@ export class FirstPersonController {
     this.onDeactivate = null;
     this.playerRadius = 0.4;
 
-    // Поддержка опьянения
     this.canMove = true;
     this.drunkSway = { x: 0, y: 0, roll: 0 };
+
+    this.soundManager = null;
+    this.wasWalking = false;
 
     this.bindEvents();
   }
 
   setCollisionManager(manager) {
     this.collisionManager = manager;
+  }
+
+  setSoundManager(soundManager) {
+    this.soundManager = soundManager;
   }
 
   bindEvents() {
@@ -46,6 +52,7 @@ export class FirstPersonController {
 
     document.addEventListener('mousemove', (e) => {
       if (!this.active || !document.pointerLockElement) return;
+      if (!this.canMove) return;
 
       this.rotation.y -= e.movementX * 0.002;
       this.rotation.x -= e.movementY * 0.002;
@@ -92,7 +99,6 @@ export class FirstPersonController {
   update() {
     if (!this.active) return;
 
-    // Движение только если разрешено
     if (this.canMove) {
       const moveX = Math.sin(this.rotation.y);
       const moveZ = Math.cos(this.rotation.y);
@@ -151,7 +157,11 @@ export class FirstPersonController {
     this.camera.position.copy(this.position);
     this.camera.rotation.order = 'YXZ';
     this.camera.rotation.y = this.rotation.y + this.drunkSway.y;
-    this.camera.rotation.x = this.rotation.x + this.drunkSway.x;
+    if (this.drunkSway.absolute) {
+      this.camera.rotation.x = this.drunkSway.x;
+    } else {
+      this.camera.rotation.x = this.rotation.x + this.drunkSway.x;
+    }
     this.camera.rotation.z = this.drunkSway.roll;
   }
 }

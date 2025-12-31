@@ -15,10 +15,10 @@ export class SceneManager {
   }
 
   setupLighting() {
-    const ambient = new THREE.AmbientLight(0x404060, 0.4);
+    const ambient = new THREE.AmbientLight(0x606080, 0.7);
     this.scene.add(ambient);
 
-    const moonLight = new THREE.DirectionalLight(0xaaaaff, 0.3);
+    const moonLight = new THREE.DirectionalLight(0xccccff, 0.5);
     moonLight.position.set(30, 50, 20);
     moonLight.castShadow = true;
     moonLight.shadow.mapSize.width = 1024;

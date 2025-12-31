@@ -1,6 +1,7 @@
 import { SceneManager } from './core/SceneManager.js';
 import { PixelRenderer } from './core/PixelRenderer.js';
 import { CollisionManager } from './core/CollisionManager.js';
+import { SoundManager } from './core/SoundManager.js';
 import { CameraController } from './controls/CameraController.js';
 import { FirstPersonController } from './controls/FirstPersonController.js';
 
@@ -10,6 +11,7 @@ import { ChristmasTree } from './environment/Tree.js';
 import { createIceRink } from './environment/IceRink.js';
 import { createFestiveArea } from './environment/FestiveArea.js';
 import { createStreetLamps } from './environment/StreetLamps.js';
+import { Speaker } from './environment/Speaker.js';
 
 import { Person } from './entities/Person.js';
 import { Skater } from './entities/Skater.js';
@@ -64,6 +66,9 @@ class App {
     this.inventory = null;
     this.intoxication = null;
 
+    this.soundManager = null;
+    this.speaker = null;
+
     this.lastTime = performance.now();
 
     this.init();
@@ -74,6 +79,7 @@ class App {
     this.createEntities();
     this.createEffects();
     this.createPlayer();
+    this.createSoundSystem();
     this.createUI();
     this.bindItemKeys();
 
@@ -146,7 +152,6 @@ class App {
     this.fireworks = new Fireworks(this.scene);
     this.intoxication = new IntoxicationEffect(this.scene);
 
-    // Когда игрок в отключке - блокируем управление
     this.intoxication.onPassedOut = () => {
       this.firstPersonController.canMove = false;
     };
@@ -164,12 +169,10 @@ class App {
 
     this.itemSystem = new ItemSystem(this.scene, this.playerBody.getItemHolder());
 
-    // Связываем питьё с опьянением
     this.itemSystem.setOnDrink(() => {
       this.intoxication.drink();
     });
 
-    // Обновляем инвентарь при изменении количества предметов
     this.itemSystem.setOnItemCountChange((index, count) => {
       if (this.inventory) {
         this.inventory.items[index].count = count;
@@ -177,11 +180,28 @@ class App {
       }
     });
 
-    // Создаём инвентарь
     this.inventory = new Inventory();
     this.inventory.setOnSelect((index) => {
       this.itemSystem.selectItem(index);
     });
+  }
+
+  createSoundSystem() {
+    const camera = this.cameraController.getPerspectiveCamera();
+    this.soundManager = new SoundManager(camera);
+
+    this.speaker = new Speaker();
+    this.scene.add(this.speaker.getMesh());
+
+    this.soundManager.loadSounds().then(() => {
+      this.soundManager.setupBackgroundMusic(this.speaker);
+      this.soundManager.playBackgroundMusic();
+    });
+
+    this.itemSystem.setSoundManager(this.soundManager);
+    this.snow.setSoundManager(this.soundManager);
+    this.fireworks.setSoundManager(this.soundManager);
+    this.firstPersonController.setSoundManager(this.soundManager);
   }
 
   bindItemKeys() {
@@ -232,6 +252,10 @@ class App {
 
     this.playerBody.getMesh().visible = active;
 
+    if (this.soundManager) {
+      this.soundManager.setFirstPersonMode(active);
+    }
+
     if (active) {
       this.inventory.show();
     } else {
@@ -258,16 +282,17 @@ class App {
     this.snow.update();
     this.fireworks.update();
 
-    // Обновляем эффект опьянения
+    if (this.speaker) {
+      this.speaker.update();
+    }
+
     if (this.intoxication) {
-      // Обновляем позицию игрока для 3D эффектов
       this.intoxication.setPlayerPosition(this.firstPersonController.position);
       this.intoxication.update(deltaTime);
     }
 
     this.cameraController.update();
 
-    // Применяем эффект покачивания камеры от опьянения (включая падение)
     if (this.firstPersonController.isActive() && this.intoxication) {
       const sway = this.intoxication.getCameraSway();
       this.firstPersonController.drunkSway = sway;

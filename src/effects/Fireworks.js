@@ -73,6 +73,11 @@ export class Fireworks {
     this.bursts = [];
     this.active = false;
     this.textSprite = null;
+    this.soundManager = null;
+  }
+
+  setSoundManager(soundManager) {
+    this.soundManager = soundManager;
   }
 
   start() {
@@ -113,7 +118,7 @@ export class Fireworks {
     ctx.font = 'bold 48px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('С Новым 2025 Годом!', 256, 64);
+    ctx.fillText('С Новым 2026 Годом!', 256, 64);
 
     const texture = new THREE.CanvasTexture(canvas);
     const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
@@ -150,6 +155,10 @@ export class Fireworks {
     const burst = new FireworkBurst(x, y, z, color);
     this.bursts.push(burst);
     this.scene.add(burst.particles);
+
+    if (this.soundManager) {
+      this.soundManager.play('fireworkBoom');
+    }
   }
 
   update() {

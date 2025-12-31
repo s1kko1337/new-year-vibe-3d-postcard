@@ -11,30 +11,33 @@ export class ItemSystem {
     this.items = [];
     this.placedFireworks = [];
 
-    // Количество каждого предмета
     this.itemCounts = {
       champagne: 10,
       sparkler: 1,
       firework: 3
     };
 
-    // Текущие экземпляры предметов
     this.champagneBottle = null;
     this.sparkler = null;
     this.miniFirework = null;
 
-    // Callbacks
     this.onDrink = null;
     this.onItemCountChange = null;
+    this.soundManager = null;
 
     this.initItems();
   }
 
+  setSoundManager(soundManager) {
+    this.soundManager = soundManager;
+    if (this.sparkler) {
+      this.sparkler.setSoundManager(soundManager);
+    }
+  }
+
   initItems() {
-    // Создаём по одному экземпляру каждого предмета
     this.champagneBottle = new ChampagneBottle();
     this.champagneBottle.setOnDrink(() => {
-      // Уменьшаем количество, создаём новую бутылку
       this.itemCounts.champagne--;
       if (this.onItemCountChange) {
         this.onItemCountChange(0, this.itemCounts.champagne);
@@ -42,7 +45,6 @@ export class ItemSystem {
       if (this.onDrink) {
         this.onDrink();
       }
-      // Сбрасываем бутылку для следующего использования
       if (this.itemCounts.champagne > 0) {
         setTimeout(() => {
           this.champagneBottle.reset();
@@ -67,7 +69,6 @@ export class ItemSystem {
   }
 
   selectItem(index) {
-    // Проверяем наличие предмета
     if (index === 0 && this.itemCounts.champagne <= 0) return;
     if (index === 1 && this.itemCounts.sparkler <= 0) return;
     if (index === 2 && this.itemCounts.firework <= 0) return;
@@ -106,21 +107,28 @@ export class ItemSystem {
     if (item.use) {
       const result = item.use(playerPosition, playerRotation);
 
+      if (result && result.type === 'sound') {
+        if (this.soundManager) {
+          this.soundManager.play(result.sound);
+        }
+      }
+
       if (result && result.type === 'placeFirework') {
+        if (this.soundManager) {
+          this.soundManager.play('fireworkLaunch');
+        }
         this.placeFirework(result.position);
         this.itemCounts.firework--;
         if (this.onItemCountChange) {
           this.onItemCountChange(2, this.itemCounts.firework);
         }
 
-        // Если фейерверки закончились, прячем предмет
         if (this.itemCounts.firework <= 0) {
           item.mesh.visible = false;
           this.currentItemIndex = -1;
         }
       }
 
-      // Проверяем использованность бенгальского огня
       if (this.currentItemIndex === 1 && this.sparkler.isConsumed()) {
         this.itemCounts.sparkler = 0;
         if (this.onItemCountChange) {
@@ -142,16 +150,14 @@ export class ItemSystem {
       fuseLight: null
     };
 
-    // Добавляем мигающий свет фитиля
     firework.fuseLight = new THREE.PointLight(0xff6600, 0.5, 2);
-    firework.fuseLight.position.set(0, 0.35, 0);
+    firework.fuseLight.position.set(0.04, 0.04, 0);
     firework.mesh.add(firework.fuseLight);
 
     firework.mesh.position.copy(position);
     this.scene.add(firework.mesh);
     this.placedFireworks.push(firework);
 
-    // Запуск через 1.5 секунды
     setTimeout(() => {
       firework.state = 'launching';
       if (firework.fuseLight) {
@@ -164,7 +170,14 @@ export class ItemSystem {
   createFireworkMesh() {
     const group = new THREE.Group();
 
-    // Основа
+    const fuse = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.01, 0.01, 0.08, 4),
+      new THREE.MeshBasicMaterial({ color: 0xffaa00 })
+    );
+    fuse.position.set(0.04, 0.04, 0);
+    fuse.rotation.z = -0.5;
+    group.add(fuse);
+
     const tube = new THREE.Mesh(
       new THREE.CylinderGeometry(0.05, 0.06, 0.3, 8),
       new THREE.MeshLambertMaterial({ color: 0xc41e3a })
@@ -172,24 +185,21 @@ export class ItemSystem {
     tube.position.y = 0.15;
     group.add(tube);
 
-    // Декоративные полоски
     const stripeMat = new THREE.MeshLambertMaterial({ color: 0xffd700 });
     for (let i = 0; i < 3; i++) {
       const stripe = new THREE.Mesh(
         new THREE.CylinderGeometry(0.052, 0.062, 0.02, 8),
         stripeMat
       );
-      stripe.position.y = 0.05 + i * 0.1;
+      stripe.position.y = 0.08 + i * 0.08;
       group.add(stripe);
     }
 
-    // Фитиль
-    const fuse = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.01, 0.01, 0.08, 4),
-      new THREE.MeshBasicMaterial({ color: 0xffaa00 })
-    );
-    fuse.position.set(0, 0.34, 0);
-    group.add(fuse);
+    const capGeo = new THREE.ConeGeometry(0.055, 0.06, 8);
+    const capMat = new THREE.MeshLambertMaterial({ color: 0x1e90ff });
+    const cap = new THREE.Mesh(capGeo, capMat);
+    cap.position.y = 0.33;
+    group.add(cap);
 
     return group;
   }
@@ -199,18 +209,15 @@ export class ItemSystem {
       if (item.update) item.update();
     });
 
-    // Обновление поставленных фейерверков
     for (let i = this.placedFireworks.length - 1; i >= 0; i--) {
       const fw = this.placedFireworks[i];
 
       if (fw.state === 'placed' && fw.fuseLight) {
-        // Мигание фитиля
         fw.fuseLight.intensity = 0.3 + Math.random() * 0.5;
       } else if (fw.state === 'launching') {
         fw.velocity += 0.025;
         fw.mesh.position.y += fw.velocity;
 
-        // Добавляем искры при взлёте
         if (Math.random() < 0.3) {
           this.createTrailSpark(fw.mesh.position);
         }
@@ -259,6 +266,10 @@ export class ItemSystem {
   }
 
   createExplosion(position) {
+    if (this.soundManager) {
+      this.soundManager.play('fireworkBoom');
+    }
+
     const colors = [0xff0000, 0x00ff00, 0xffff00, 0xff00ff, 0x00ffff, 0xffffff, 0xff8800];
     const color = colors[Math.floor(Math.random() * colors.length)];
     const count = 100;
@@ -296,7 +307,6 @@ export class ItemSystem {
     particles.userData = { velocities, life: 1, decay: 0.015 };
     this.scene.add(particles);
 
-    // Вспышка света
     const flash = new THREE.PointLight(color, 3, 30);
     flash.position.copy(position);
     this.scene.add(flash);
@@ -309,7 +319,7 @@ export class ItemSystem {
         pos[i * 3] += vel[i].x;
         pos[i * 3 + 1] += vel[i].y;
         pos[i * 3 + 2] += vel[i].z;
-        vel[i].y -= 0.004; // Гравитация
+        vel[i].y -= 0.004;
       }
 
       particles.geometry.attributes.position.needsUpdate = true;

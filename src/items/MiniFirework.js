@@ -4,20 +4,18 @@ export class MiniFirework {
   constructor() {
     this.mesh = new THREE.Group();
     this.placed = false;
-    this.count = 3; // Player has 3 fireworks
+    this.count = 3;
 
     this.create();
   }
 
   create() {
-    // Firework tube
     const tubeGeo = new THREE.CylinderGeometry(0.03, 0.035, 0.15, 8);
     const tubeMat = new THREE.MeshLambertMaterial({ color: 0xc41e3a });
     const tube = new THREE.Mesh(tubeGeo, tubeMat);
     tube.position.y = 0.075;
     this.mesh.add(tube);
 
-    // Decorative stripes
     const stripeMat = new THREE.MeshLambertMaterial({ color: 0xffd700 });
     for (let i = 0; i < 3; i++) {
       const stripe = new THREE.Mesh(
@@ -28,14 +26,12 @@ export class MiniFirework {
       this.mesh.add(stripe);
     }
 
-    // Paper cap
     const capGeo = new THREE.ConeGeometry(0.035, 0.04, 8);
     const capMat = new THREE.MeshLambertMaterial({ color: 0x1e90ff });
     const cap = new THREE.Mesh(capGeo, capMat);
     cap.position.y = 0.17;
     this.mesh.add(cap);
 
-    // Fuse
     const fuseGeo = new THREE.CylinderGeometry(0.005, 0.005, 0.05, 4);
     const fuseMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
     const fuse = new THREE.Mesh(fuseGeo, fuseMat);
@@ -43,7 +39,6 @@ export class MiniFirework {
     fuse.rotation.z = 0.5;
     this.mesh.add(fuse);
 
-    // Position in hand
     this.mesh.position.set(0, -0.05, -0.1);
   }
 
@@ -52,11 +47,9 @@ export class MiniFirework {
   }
 
   deactivate() {
-    // Nothing special
   }
 
   updateAppearance() {
-    // Could show count indicator here
   }
 
   use(playerPosition, playerRotation) {
@@ -65,7 +58,6 @@ export class MiniFirework {
     this.count--;
     this.updateAppearance();
 
-    // Calculate position in front of player
     const placeDistance = 1.5;
     const placeX = playerPosition.x - Math.sin(playerRotation.y) * placeDistance;
     const placeZ = playerPosition.z - Math.cos(playerRotation.y) * placeDistance;
@@ -77,7 +69,6 @@ export class MiniFirework {
   }
 
   update() {
-    // Item in hand doesn't need updates
   }
 
   isConsumed() {

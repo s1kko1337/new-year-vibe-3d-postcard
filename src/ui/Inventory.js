@@ -15,7 +15,6 @@ export class Inventory {
   }
 
   create() {
-    // Загружаем пиксельный шрифт
     const fontLink = document.createElement('link');
     fontLink.href = 'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap';
     fontLink.rel = 'stylesheet';
@@ -245,7 +244,6 @@ export class Inventory {
       slot.className = 'inventory-slot';
       slot.dataset.index = index;
 
-      // Создаём индикаторы количества
       let countBoxes = '';
       for (let i = 0; i < item.maxCount; i++) {
         const filled = i < item.count ? 'filled' : '';
@@ -303,7 +301,6 @@ export class Inventory {
       slot.classList.toggle('selected', index === this.selectedIndex);
       slot.classList.toggle('empty', item.count <= 0);
 
-      // Обновляем индикаторы количества
       const countBoxes = slot.querySelectorAll('.count-box');
       countBoxes.forEach((box, i) => {
         box.classList.toggle('filled', i < item.count);

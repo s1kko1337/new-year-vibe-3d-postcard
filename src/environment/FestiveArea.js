@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { COLORS } from '../config/colors.js';
 
-function createTent(x, z, color, scene) {
+function createTent(x, z, color, scene, rotationY = 0) {
   const group = new THREE.Group();
 
   const base = new THREE.Mesh(
@@ -38,6 +38,7 @@ function createTent(x, z, color, scene) {
   }
 
   group.position.set(x, 0, z);
+  group.rotation.y = rotationY;
   scene.add(group);
 }
 
@@ -67,7 +68,7 @@ function createBench(x, z, scene) {
   scene.add(group);
 }
 
-function createSnowman(x, z, scene) {
+function createSnowman(x, z, scene, rotationY = 0) {
   const group = new THREE.Group();
   const snowMat = new THREE.MeshLambertMaterial({ color: 0xfffafa });
 
@@ -111,6 +112,7 @@ function createSnowman(x, z, scene) {
   group.add(scarf);
 
   group.position.set(x, 0, z);
+  group.rotation.y = rotationY;
   scene.add(group);
 }
 
@@ -147,10 +149,10 @@ function createGifts(scene) {
 }
 
 export function createFestiveArea(scene) {
-  createTent(-10, 5, 0xc41e3a, scene);
+  createTent(-10, 5, 0xc41e3a, scene, Math.PI); 
   createTent(-8, -8, 0x2e5a3e, scene);
   createBench(-6, 8, scene);
   createBench(6, -6, scene);
-  createSnowman(-12, 12, scene);
+  createSnowman(-12, 12, scene, Math.PI); 
   createGifts(scene);
 }

@@ -3,42 +3,36 @@ import * as THREE from 'three';
 export class IntoxicationEffect {
   constructor(scene) {
     this.scene = scene;
-    this.drunkLevel = 0; // 0-5
+    this.drunkLevel = 0;
     this.effectTimer = 0;
     this.swayPhase = 0;
     this.drunkMeter = null;
     this.isPassedOut = false;
     this.passedOutTimer = 0;
-    this.passedOutProgress = 0; // 0-1 для анимации падения
+    this.passedOutProgress = 0;
 
-    // 3D объекты галлюцинаций
     this.hallucinations = [];
     this.squirrels = [];
     this.stars3D = [];
     this.floatingBottles = [];
 
-    // Callbacks
     this.onPassedOut = null;
     this.onWakeUp = null;
 
-    // Позиция игрока (обновляется извне)
     this.playerPosition = new THREE.Vector3();
 
     this.createUI();
   }
 
   createUI() {
-    // Загружаем пиксельный шрифт
     const fontLink = document.createElement('link');
     fontLink.href = 'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap';
     fontLink.rel = 'stylesheet';
     document.head.appendChild(fontLink);
 
-    // Контейнер для 2D пузырьков
     this.bubblesContainer = document.createElement('div');
     this.bubblesContainer.id = 'drunk-bubbles';
 
-    // Индикатор опьянения
     this.drunkMeter = document.createElement('div');
     this.drunkMeter.id = 'drunk-meter';
     this.drunkMeter.innerHTML = `
@@ -55,11 +49,9 @@ export class IntoxicationEffect {
       </div>
     `;
 
-    // Оверлей затемнения (лёгкий, не полный блэкаут)
     this.vignetteOverlay = document.createElement('div');
     this.vignetteOverlay.id = 'vignette-overlay';
 
-    // Текст при отключке
     this.passedOutUI = document.createElement('div');
     this.passedOutUI.id = 'passed-out-ui';
     this.passedOutUI.innerHTML = `
@@ -256,7 +248,6 @@ export class IntoxicationEffect {
     this.vignetteOverlay.classList.add('active');
     this.passedOutUI.classList.add('visible');
 
-    // Создаём 3D галлюцинации
     this.spawn3DHallucinations();
 
     if (this.onPassedOut) this.onPassedOut();
@@ -265,35 +256,34 @@ export class IntoxicationEffect {
   spawn3DHallucinations() {
     const pos = this.playerPosition;
 
-    // Белки - прыгают вокруг игрока
     for (let i = 0; i < 5; i++) {
       const squirrel = this.createSquirrel();
       const angle = (i / 5) * Math.PI * 2;
-      const radius = 2 + Math.random() * 2;
+      const radius = 1.5 + Math.random() * 1.5;
       squirrel.position.set(
         pos.x + Math.cos(angle) * radius,
-        0.3,
+        4 + Math.random() * 2,
         pos.z + Math.sin(angle) * radius
       );
+      squirrel.rotation.x = Math.PI / 2;
       squirrel.userData = {
         angle: angle,
         radius: radius,
-        speed: 0.02 + Math.random() * 0.02,
+        speed: 0.03 + Math.random() * 0.02,
         jumpPhase: Math.random() * Math.PI * 2,
-        baseY: 0.3
+        baseY: 4 + Math.random() * 2
       };
       this.scene.add(squirrel);
       this.squirrels.push(squirrel);
     }
 
-    // Звёзды - крутятся над игроком
     for (let i = 0; i < 8; i++) {
       const star = this.createStar();
       const angle = (i / 8) * Math.PI * 2;
       star.position.set(
-        pos.x + Math.cos(angle) * 1.5,
-        2.5 + Math.random() * 0.5,
-        pos.z + Math.sin(angle) * 1.5
+        pos.x + Math.cos(angle) * 2,
+        6 + Math.random() * 2,
+        pos.z + Math.sin(angle) * 2
       );
       star.userData = {
         angle: angle,
@@ -305,19 +295,19 @@ export class IntoxicationEffect {
       this.stars3D.push(star);
     }
 
-    // Летающие бутылки
     for (let i = 0; i < 4; i++) {
       const bottle = this.createFloatingBottle();
       const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
       bottle.position.set(
-        pos.x + Math.cos(angle) * 3,
-        1 + Math.random(),
-        pos.z + Math.sin(angle) * 3
+        pos.x + Math.cos(angle) * 2.5,
+        5 + Math.random() * 2,
+        pos.z + Math.sin(angle) * 2.5
       );
       bottle.userData = {
         angle: angle,
         floatPhase: Math.random() * Math.PI * 2,
-        spinSpeed: 0.02 + Math.random() * 0.03
+        spinSpeed: 0.02 + Math.random() * 0.03,
+        baseY: bottle.position.y
       };
       this.scene.add(bottle);
       this.floatingBottles.push(bottle);
@@ -327,7 +317,6 @@ export class IntoxicationEffect {
   createSquirrel() {
     const group = new THREE.Group();
 
-    // Тело белки (пиксельный стиль)
     const bodyMat = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
     const body = new THREE.Mesh(
       new THREE.BoxGeometry(0.3, 0.25, 0.4),
@@ -336,7 +325,6 @@ export class IntoxicationEffect {
     body.position.y = 0.15;
     group.add(body);
 
-    // Голова
     const head = new THREE.Mesh(
       new THREE.BoxGeometry(0.2, 0.2, 0.2),
       bodyMat
@@ -344,7 +332,6 @@ export class IntoxicationEffect {
     head.position.set(0, 0.3, 0.25);
     group.add(head);
 
-    // Глаза
     const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
     const eyeL = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.05), eyeMat);
     eyeL.position.set(-0.06, 0.35, 0.35);
@@ -353,7 +340,6 @@ export class IntoxicationEffect {
     eyeR.position.x = 0.06;
     group.add(eyeR);
 
-    // Хвост (большой и пушистый)
     const tailMat = new THREE.MeshLambertMaterial({ color: 0x654321 });
     const tail = new THREE.Mesh(
       new THREE.BoxGeometry(0.15, 0.5, 0.15),
@@ -363,7 +349,6 @@ export class IntoxicationEffect {
     tail.rotation.x = -0.5;
     group.add(tail);
 
-    // Уши
     const earMat = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
     const earL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 0.05), earMat);
     earL.position.set(-0.08, 0.45, 0.2);
@@ -378,18 +363,15 @@ export class IntoxicationEffect {
   createStar() {
     const group = new THREE.Group();
 
-    // Пиксельная звезда из кубов
     const starMat = new THREE.MeshBasicMaterial({
       color: 0xffff00,
       emissive: 0xffff00,
       emissiveIntensity: 0.5
     });
 
-    // Центр
     const center = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 0.15), starMat);
     group.add(center);
 
-    // Лучи (4 направления)
     const rayGeo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
     const positions = [
       [0.2, 0, 0], [-0.2, 0, 0],
@@ -404,7 +386,6 @@ export class IntoxicationEffect {
       group.add(ray);
     });
 
-    // Свечение
     const light = new THREE.PointLight(0xffff00, 0.5, 2);
     group.add(light);
 
@@ -421,7 +402,6 @@ export class IntoxicationEffect {
       opacity: 0.7
     });
 
-    // Тело
     const body = new THREE.Mesh(
       new THREE.BoxGeometry(0.15, 0.35, 0.15),
       glassMat
@@ -429,7 +409,6 @@ export class IntoxicationEffect {
     body.position.y = 0.175;
     group.add(body);
 
-    // Горлышко
     const neck = new THREE.Mesh(
       new THREE.BoxGeometry(0.08, 0.15, 0.08),
       glassMat
@@ -437,7 +416,6 @@ export class IntoxicationEffect {
     neck.position.y = 0.425;
     group.add(neck);
 
-    // Пробка
     const cork = new THREE.Mesh(
       new THREE.BoxGeometry(0.06, 0.08, 0.06),
       new THREE.MeshLambertMaterial({ color: 0x8B4513 })
@@ -445,7 +423,6 @@ export class IntoxicationEffect {
     cork.position.y = 0.54;
     group.add(cork);
 
-    // Этикетка
     const label = new THREE.Mesh(
       new THREE.BoxGeometry(0.16, 0.1, 0.16),
       new THREE.MeshLambertMaterial({ color: 0xffffcc })
@@ -457,7 +434,6 @@ export class IntoxicationEffect {
   }
 
   remove3DHallucinations() {
-    // Удаляем белок
     this.squirrels.forEach(s => {
       this.scene.remove(s);
       s.traverse(child => {
@@ -467,7 +443,6 @@ export class IntoxicationEffect {
     });
     this.squirrels = [];
 
-    // Удаляем звёзды
     this.stars3D.forEach(s => {
       this.scene.remove(s);
       s.traverse(child => {
@@ -478,7 +453,6 @@ export class IntoxicationEffect {
     });
     this.stars3D = [];
 
-    // Удаляем бутылки
     this.floatingBottles.forEach(b => {
       this.scene.remove(b);
       b.traverse(child => {
@@ -498,7 +472,6 @@ export class IntoxicationEffect {
     this.passedOutUI.classList.remove('visible');
     this.updateMeter();
 
-    // Удаляем 3D галлюцинации
     this.remove3DHallucinations();
 
     if (this.onWakeUp) this.onWakeUp();
@@ -541,16 +514,15 @@ export class IntoxicationEffect {
       return { x: 0, y: 0, roll: 0 };
     }
 
-    // При отключке - лежим на спине, смотрим вверх
     if (this.isPassedOut) {
-      // Плавное падение назад
       this.passedOutProgress = Math.min(1, this.passedOutProgress + 0.02);
-      const fallAngle = this.passedOutProgress * (-Math.PI / 2 + 0.2); // Почти вертикально вверх
+      const fallAngle = this.passedOutProgress * (Math.PI / 2 - 0.2);
 
       return {
         x: fallAngle,
-        y: Math.sin(this.swayPhase * 0.5) * 0.05, // Лёгкое покачивание головой
-        roll: Math.sin(this.swayPhase * 0.3) * 0.1 // Наклон головы
+        y: Math.sin(this.swayPhase * 0.5) * 0.05,
+        roll: Math.sin(this.swayPhase * 0.3) * 0.1,
+        absolute: true
       };
     }
 
@@ -570,13 +542,11 @@ export class IntoxicationEffect {
     if (this.isPassedOut) {
       this.passedOutTimer -= deltaTime;
 
-      // Обновляем таймер
       const timerEl = document.getElementById('passout-timer');
       if (timerEl) {
         timerEl.textContent = Math.max(0, Math.ceil(this.passedOutTimer / 1000));
       }
 
-      // Обновляем 3D галлюцинации
       this.update3DHallucinations(deltaTime);
 
       if (this.passedOutTimer <= 0) {
@@ -606,42 +576,39 @@ export class IntoxicationEffect {
     const pos = this.playerPosition;
     const time = performance.now() * 0.001;
 
-    // Белки прыгают вокруг игрока
     this.squirrels.forEach(squirrel => {
       const ud = squirrel.userData;
       ud.angle += ud.speed;
-      ud.jumpPhase += 0.15;
+      ud.jumpPhase += 0.12;
 
       squirrel.position.x = pos.x + Math.cos(ud.angle) * ud.radius;
       squirrel.position.z = pos.z + Math.sin(ud.angle) * ud.radius;
-      squirrel.position.y = ud.baseY + Math.abs(Math.sin(ud.jumpPhase)) * 0.4;
+      squirrel.position.y = ud.baseY + Math.abs(Math.sin(ud.jumpPhase)) * 1.5;
 
-      // Смотрят на игрока
-      squirrel.lookAt(pos.x, squirrel.position.y, pos.z);
+      squirrel.rotation.x = Math.PI / 2 + Math.sin(ud.jumpPhase) * 0.2;
+      squirrel.rotation.y = ud.angle + Math.PI;
     });
 
-    // Звёзды крутятся над головой
     this.stars3D.forEach(star => {
       const ud = star.userData;
       ud.angle += ud.orbitSpeed;
 
-      star.position.x = pos.x + Math.cos(ud.angle) * 1.5;
-      star.position.z = pos.z + Math.sin(ud.angle) * 1.5;
-      star.position.y = ud.baseY + Math.sin(time * 2 + ud.angle) * 0.2;
+      star.position.x = pos.x + Math.cos(ud.angle) * 2;
+      star.position.z = pos.z + Math.sin(ud.angle) * 2;
+      star.position.y = ud.baseY + Math.sin(time * 2 + ud.angle) * 0.5;
 
       star.rotation.y += ud.spinSpeed;
       star.rotation.z += ud.spinSpeed * 0.5;
     });
 
-    // Бутылки плавают и крутятся
     this.floatingBottles.forEach(bottle => {
       const ud = bottle.userData;
       ud.floatPhase += 0.03;
-      ud.angle += 0.005;
+      ud.angle += 0.008;
 
-      bottle.position.x = pos.x + Math.cos(ud.angle) * 3;
-      bottle.position.z = pos.z + Math.sin(ud.angle) * 3;
-      bottle.position.y = 1.5 + Math.sin(ud.floatPhase) * 0.3;
+      bottle.position.x = pos.x + Math.cos(ud.angle) * 2.5;
+      bottle.position.z = pos.z + Math.sin(ud.angle) * 2.5;
+      bottle.position.y = ud.baseY + Math.sin(ud.floatPhase) * 0.5;
 
       bottle.rotation.y += ud.spinSpeed;
       bottle.rotation.x = Math.sin(ud.floatPhase * 0.7) * 0.3;
