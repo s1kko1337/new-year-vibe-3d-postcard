@@ -81,6 +81,10 @@ export class FirstPersonController {
   deactivate() {
     this.active = false;
     document.exitPointerLock();
+    if (this.soundManager && this.wasWalking) {
+      this.soundManager.stop('footstep');
+      this.wasWalking = false;
+    }
   }
 
   toggle() {
@@ -153,6 +157,17 @@ export class FirstPersonController {
         this.isGrounded = true;
       }
     }
+
+    const isWalking = (this.keys['KeyW'] || this.keys['KeyA'] || this.keys['KeyS'] || this.keys['KeyD'])
+                      && this.isGrounded && this.canMove;
+
+    if (isWalking && !this.wasWalking) {
+      if (this.soundManager) this.soundManager.playLoop('footstep');
+    }
+    if (!isWalking && this.wasWalking) {
+      if (this.soundManager) this.soundManager.stop('footstep');
+    }
+    this.wasWalking = isWalking;
 
     this.camera.position.copy(this.position);
     this.camera.rotation.order = 'YXZ';

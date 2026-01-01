@@ -3,7 +3,7 @@ export const SOUND_CONFIG = {
     background: {
       path: './assets/sounds/music/background.mp3',
       loop: true,
-      volume: 0.7,
+      volume: 0.3,
       positional: {
         refDistance: 5,
         maxDistance: 50,
@@ -51,6 +51,6 @@ export const SOUND_CONFIG = {
 };
 
 export const SOUND_STUBS = {
-  enabled: true,
+  enabled: false,
   logMissing: true
 };
