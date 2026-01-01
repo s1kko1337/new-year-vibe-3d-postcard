@@ -4,15 +4,17 @@ export class Sparkler {
   constructor() {
     this.mesh = new THREE.Group();
     this.sparks = [];
+    this.sparkPool = [];
+    this.sparkPoolSize = 100;
     this.sparkPoint = null;
     this.light = null;
     this.active = false;
     this.burnProgress = 0;
     this.burnSpeed = 0.0005;
-    this.sparkMaterial = null;
     this.soundManager = null;
 
     this.create();
+    this.createSparkPool();
   }
 
   setSoundManager(soundManager) {
@@ -40,17 +42,55 @@ export class Sparkler {
     this.light.position.copy(this.sparkPoint.position);
     this.mesh.add(this.light);
 
-    this.sparkMaterial = new THREE.PointsMaterial({
-      color: 0xffdd44,
-      size: 0.03,
-      transparent: true,
-      opacity: 1,
-      blending: THREE.AdditiveBlending
-    });
-
     this.mesh.rotation.x = -0.5;
     this.mesh.rotation.z = 0.2;
     this.mesh.position.set(0.05, 0, -0.15);
+  }
+
+  createSparkPool() {
+    const colors = [0xffdd44, 0xffaa00, 0xffffff, 0xff8800];
+
+    for (let i = 0; i < this.sparkPoolSize; i++) {
+      const sparkGeo = new THREE.BufferGeometry();
+      const positions = new Float32Array(3);
+      sparkGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+      const sparkMat = new THREE.PointsMaterial({
+        color: colors[i % colors.length],
+        size: 0.02,
+        transparent: true,
+        opacity: 0,
+        blending: THREE.AdditiveBlending
+      });
+
+      const spark = new THREE.Points(sparkGeo, sparkMat);
+      spark.visible = false;
+      spark.userData = {
+        velocity: new THREE.Vector3(),
+        life: 0,
+        inUse: false
+      };
+
+      this.sparkPool.push(spark);
+      this.mesh.add(spark);
+    }
+  }
+
+  getSparkFromPool() {
+    for (const spark of this.sparkPool) {
+      if (!spark.userData.inUse) {
+        spark.userData.inUse = true;
+        spark.visible = true;
+        return spark;
+      }
+    }
+    return null;
+  }
+
+  returnSparkToPool(spark) {
+    spark.userData.inUse = false;
+    spark.visible = false;
+    spark.material.opacity = 0;
   }
 
   activate() {
@@ -98,16 +138,19 @@ export class Sparkler {
 
     for (let i = this.sparks.length - 1; i >= 0; i--) {
       const spark = this.sparks[i];
+      const pos = spark.geometry.attributes.position.array;
 
-      spark.position.add(spark.userData.velocity);
+      pos[0] += spark.userData.velocity.x;
+      pos[1] += spark.userData.velocity.y;
+      pos[2] += spark.userData.velocity.z;
+      spark.geometry.attributes.position.needsUpdate = true;
+
       spark.userData.velocity.y -= 0.002;
       spark.userData.life -= 0.05;
-      spark.material.opacity = spark.userData.life;
+      spark.material.opacity = Math.max(0, spark.userData.life);
 
       if (spark.userData.life <= 0) {
-        this.mesh.remove(spark);
-        spark.geometry.dispose();
-        spark.material.dispose();
+        this.returnSparkToPool(spark);
         this.sparks.splice(i, 1);
       }
     }
@@ -117,40 +160,29 @@ export class Sparkler {
     const sparkCount = 2 + Math.floor(Math.random() * 3);
 
     for (let i = 0; i < sparkCount; i++) {
-      const sparkGeo = new THREE.BufferGeometry();
-      const positions = new Float32Array(3);
-      positions[0] = this.sparkPoint.position.x;
-      positions[1] = this.sparkPoint.position.y;
-      positions[2] = this.sparkPoint.position.z;
-      sparkGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const spark = this.getSparkFromPool();
+      if (!spark) continue;
 
-      const colors = [0xffdd44, 0xffaa00, 0xffffff, 0xff8800];
-      const color = colors[Math.floor(Math.random() * colors.length)];
+      const pos = spark.geometry.attributes.position.array;
+      pos[0] = this.sparkPoint.position.x;
+      pos[1] = this.sparkPoint.position.y;
+      pos[2] = this.sparkPoint.position.z;
+      spark.geometry.attributes.position.needsUpdate = true;
 
-      const sparkMat = new THREE.PointsMaterial({
-        color: color,
-        size: 0.015 + Math.random() * 0.02,
-        transparent: true,
-        opacity: 1,
-        blending: THREE.AdditiveBlending
-      });
-
-      const spark = new THREE.Points(sparkGeo, sparkMat);
+      spark.material.size = 0.015 + Math.random() * 0.02;
+      spark.material.opacity = 1;
 
       const speed = 0.02 + Math.random() * 0.04;
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.random() * Math.PI;
 
-      spark.userData = {
-        velocity: new THREE.Vector3(
-          Math.sin(phi) * Math.cos(theta) * speed,
-          Math.sin(phi) * Math.sin(theta) * speed + 0.02,
-          Math.cos(phi) * speed
-        ),
-        life: 0.5 + Math.random() * 0.5
-      };
+      spark.userData.velocity.set(
+        Math.sin(phi) * Math.cos(theta) * speed,
+        Math.sin(phi) * Math.sin(theta) * speed + 0.02,
+        Math.cos(phi) * speed
+      );
+      spark.userData.life = 0.5 + Math.random() * 0.5;
 
-      this.mesh.add(spark);
       this.sparks.push(spark);
     }
   }

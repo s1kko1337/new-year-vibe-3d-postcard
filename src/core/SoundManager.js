@@ -11,6 +11,8 @@ export class SoundManager {
     this.buffers = {};
     this.sounds = {};
     this.loopingSounds = {};
+    this.audioPool = {};
+    this.poolSize = 5;
 
     this.isFirstPerson = false;
     this.masterVolume = 1.0;
@@ -46,7 +48,38 @@ export class SoundManager {
     });
 
     await Promise.all(loadPromises);
+    this.createAudioPools();
     this.initialized = true;
+  }
+
+  createAudioPools() {
+    Object.keys(SOUND_CONFIG.effects).forEach(soundId => {
+      const buffer = this.buffers[soundId];
+      if (buffer && !SOUND_CONFIG.effects[soundId].loop) {
+        this.audioPool[soundId] = [];
+        for (let i = 0; i < this.poolSize; i++) {
+          const audio = new THREE.Audio(this.listener);
+          audio.setBuffer(buffer);
+          this.audioPool[soundId].push(audio);
+        }
+      }
+    });
+  }
+
+  getPooledAudio(soundId) {
+    const pool = this.audioPool[soundId];
+    if (!pool) return null;
+
+    for (const audio of pool) {
+      if (!audio.isPlaying) {
+        return audio;
+      }
+    }
+
+    const audio = new THREE.Audio(this.listener);
+    audio.setBuffer(this.buffers[soundId]);
+    pool.push(audio);
+    return audio;
   }
 
   loadSound(soundId, config) {
@@ -174,15 +207,13 @@ export class SoundManager {
 
     if (!buffer) return null;
 
-    const sound = new THREE.Audio(this.listener);
-    sound.setBuffer(buffer);
+    const sound = this.getPooledAudio(soundId);
+    if (!sound) return null;
+
     sound.setVolume(config.volume * this.masterVolume);
     sound.setLoop(false);
+    if (sound.isPlaying) sound.stop();
     sound.play();
-
-    sound.onEnded = () => {
-      sound.disconnect();
-    };
 
     return sound;
   }

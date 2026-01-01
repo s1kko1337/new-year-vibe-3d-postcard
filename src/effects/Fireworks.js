@@ -110,21 +110,30 @@ export class Fireworks {
 
   showText() {
     const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 128;
+    canvas.width = 2048;
+    canvas.height = 512;
     const ctx = canvas.getContext('2d');
 
+    ctx.shadowColor = '#ff6600';
+    ctx.shadowBlur = 30;
     ctx.fillStyle = '#ffd700';
-    ctx.font = 'bold 48px Arial';
+    ctx.font = 'bold 180px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('С Новым 2026 Годом!', 256, 64);
+    ctx.fillText('С Новым 2026 Годом!', 1024, 256);
+
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = '#ff8800';
+    ctx.lineWidth = 4;
+    ctx.strokeText('С Новым 2026 Годом!', 1024, 256);
 
     const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
     const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
     this.textSprite = new THREE.Sprite(material);
-    this.textSprite.scale.set(30, 7.5, 1);
-    this.textSprite.position.set(0, 35, 0);
+    this.textSprite.scale.set(40, 10, 1);
+    this.textSprite.position.set(0, 22, 0);
     this.scene.add(this.textSprite);
   }
 

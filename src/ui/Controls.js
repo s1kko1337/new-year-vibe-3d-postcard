@@ -4,18 +4,35 @@ export class UIControls {
     this.onFireworks = options.onFireworks;
     this.onFirstPerson = options.onFirstPerson;
     this.infoElement = document.getElementById('info');
+    this.isMobile = this.detectMobile();
 
     this.createUI();
+    this.updateInfo(false);
+  }
+
+  detectMobile() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+           (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) ||
+           ('ontouchstart' in window);
   }
 
   createUI() {
     const container = document.createElement('div');
     container.id = 'controls';
-    container.innerHTML = `
-      <button id="stormBtn">Метель</button>
-      <button id="fireworksBtn">Салют</button>
-      <button id="fpBtn">От первого лица</button>
-    `;
+
+    if (this.isMobile) {
+      container.innerHTML = `
+        <button id="stormBtn">Метель</button>
+        <button id="fireworksBtn">Салют</button>
+      `;
+    } else {
+      container.innerHTML = `
+        <button id="stormBtn">Метель</button>
+        <button id="fireworksBtn">Салют</button>
+        <button id="fpBtn">От первого лица</button>
+      `;
+    }
+
     document.body.appendChild(container);
 
     document.getElementById('stormBtn').addEventListener('click', () => {
@@ -28,11 +45,13 @@ export class UIControls {
       this.updateButton('fireworksBtn', active);
     });
 
-    document.getElementById('fpBtn').addEventListener('click', () => {
-      const active = this.onFirstPerson();
-      this.updateButton('fpBtn', active);
-      this.updateInfo(active);
-    });
+    if (!this.isMobile) {
+      document.getElementById('fpBtn').addEventListener('click', () => {
+        const active = this.onFirstPerson();
+        this.updateButton('fpBtn', active);
+        this.updateInfo(active);
+      });
+    }
   }
 
   updateButton(id, active) {
@@ -46,7 +65,9 @@ export class UIControls {
 
   updateInfo(fpMode) {
     if (this.infoElement) {
-      if (fpMode) {
+      if (this.isMobile) {
+        this.infoElement.textContent = 'Палец: вращение | Щипок: zoom';
+      } else if (fpMode) {
         this.infoElement.textContent = 'WASD: движение | Пробел: прыжок | 1-3: предметы | ЛКМ: использовать | ESC: выход';
       } else {
         this.infoElement.textContent = 'ЛКМ: вращение | Колесо: zoom | ПКМ: перемещение';
@@ -55,7 +76,9 @@ export class UIControls {
   }
 
   setFirstPersonState(active) {
-    this.updateButton('fpBtn', active);
+    if (!this.isMobile) {
+      this.updateButton('fpBtn', active);
+    }
     this.updateInfo(active);
   }
 }
